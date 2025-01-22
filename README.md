@@ -1,4 +1,4 @@
-![screenshot](imageFolder/screenshot.png)
+![screenshot](screenshot.png)
 # app.PumpVolt.fun Demo – Open Source Repository
 
 Welcome to the **PumpVolt.Fun Demo** repository. This demo release is intended to provide **legitimacy and transparency** to our investors and stakeholders, showcasing a portion of the technology and processes behind our application. Please note that **this is only a demo** version, and the **complete, production-level source code is not publicly available**. The full application—exclusively provided to verified holders—offers significantly more robust features, security, and functionality.
