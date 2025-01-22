@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solana AI Dashboard</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="/static/css/styles.css" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="logo">
+                        <i class="fas fa-cube"></i>
+                        Solana AI
+                    </div>
+                    <nav class="header-nav">
+                        <button class="nav-button active" data-section="dashboard">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Dashboard</span>
+                        </button>
+                        <button class="nav-button" data-section="wallets">
+                            <i class="fas fa-wallet"></i>
+                            <span>Wallets</span>
+                        </button>
+                        <button class="nav-button" data-section="bundler">
+                            <i class="fas fa-box"></i>
+                            <span>Bundler</span>
+                        </button>
+                        <button class="nav-button" data-section="ai">
+                            <i class="fas fa-robot"></i>
+                            <span>AI</span>
+                        </button>
+                    </nav>
+                </div>
+                <div class="header-right">
+                    <div class="admin-wallet">
+                        <div class="admin-balance" id="admin-balance">Loading...</div>
+                        <div class="admin-address" id="admin-address">Loading...</div>
+                    </div>
+                    <button class="refresh-button" onclick="refreshAll()">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="nav-button" data-section="settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="total-wallets">0</div>
+                <div class="stat-label">Total Wallets</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="total-balance">0 SOL</div>
+                <div class="stat-label">Total Balance</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avg-balance">0 SOL</div>
+                <div class="stat-label">Average Balance</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Wallet Management</h2>
+            <form id="generate-wallets-form">
+                <input type="number" name="num_wallets" class="search-bar" placeholder="Number of Wallets" value="19" min="1" required>
+                <button type="submit" class="button">Generate Wallets</button>
+            </form>
+            <div id="generate-wallets-result"></div>
+        </div>
+
+        <div class="card">
+            <h2>Fund Wallets</h2>
+            <div class="funding-section">
+                <form id="fund-wallets-form">
+                    <div class="form-group">
+                        <label for="amount">Amount per wallet (SOL)</label>
+                        <input type="number" 
+                               id="amount" 
+                               name="amount" 
+                               class="search-bar" 
+                               placeholder="Enter SOL amount" 
+                               step="0.001" 
+                               min="0" 
+                               required>
+                    </div>
+                    <button type="submit" class="button">
+                        <i class="fas fa-coins"></i> Fund Wallets
+                    </button>
+                </form>
+                <div id="funding-result" class="funding-result"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Wallet Overview</h2>
+            <input type="text" id="wallet-search" class="search-bar" placeholder="Search wallets...">
+            <table class="wallet-table" id="wallets-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Public Key</th>
+                        <th>Balance</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>AI Assistant</h2>
+            <div class="ai-chat-section">
+                <form id="ai-question-form">
+                    <input type="text" name="question" class="search-bar" placeholder="Ask about your wallets or bundling strategy..." required>
+                    <button type="submit" class="button">
+                        <i class="fas fa-robot"></i> Ask AI
+                    </button>
+                </form>
+                <div id="ai-response" class="ai-response"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Bundle Strategy</h2>
+            <button class="button" onclick="getSuggestedStrategy()">
+                <i class="fas fa-lightbulb"></i> Get AI Strategy Suggestion
+            </button>
+            <div id="strategy-response" class="ai-response"></div>
+        </div>
+
+        <div class="card">
+            <h2>PumpFun Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-title">Total Bundles</div>
+                    <div class="stat-value" id="total-bundles">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-title">Active Bundles</div>
+                    <div class="stat-value" id="active-bundles">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-title">Success Rate</div>
+                    <div class="stat-value" id="success-rate">0%</div>
+                </div>
+            </div>
+            <div class="charts-container">
+                <div class="chart-wrapper">
+                    <canvas id="bundleActivityChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card settings-card" style="display: none;">
+            <h2>Settings</h2>
+            <div class="settings-section">
+                <div class="form-group">
+                    <label>RPC Endpoint</label>
+                    <input type="text" id="rpc-endpoint" class="search-bar" placeholder="RPC URL">
+                </div>
+                <div class="form-group">
+                    <label>Network</label>
+                    <select id="network" class="search-bar">
+                        <option value="mainnet-beta">Mainnet Beta</option>
+                        <option value="testnet">Testnet</option>
+                        <option value="devnet">Devnet</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Theme</label>
+                    <select id="theme" class="search-bar">
+                        <option value="dark">Dark</option>
+                        <option value="light">Light</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Auto-refresh Interval (seconds)</label>
+                    <input type="number" id="refresh-interval" class="search-bar" min="5" value="30">
+                </div>
+                <button class="button" onclick="saveSettings()">
+                    <i class="fas fa-save"></i> Save Settings
+                </button>
+            </div>
+        </div>
+
+        <div class="card bundler-card">
+            <h2>Bundle Management</h2>
+            <div class="bundle-actions">
+                <button class="button primary-button" onclick="createBundle()">
+                    <i class="fas fa-plus"></i> Create New Bundle
+                </button>
+            </div>
+
+            <div class="bundle-list">
+                <h3>Active Bundles</h3>
+                <table class="wallet-table" id="bundles-table">
+                    <thead>
+                        <tr>
+                            <th>Bundle ID</th>
+                            <th>Wallets</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Bundle rows will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bundle-strategy">
+                <h3>Trade Strategy</h3>
+                <div class="strategy-options">
+                    <button class="button strategy-button" onclick="executeBundledTrades('buy', {})">
+                        <i class="fas fa-arrow-up"></i> Buy
+                    </button>
+                    <button class="button strategy-button" onclick="executeBundledTrades('sell', {})">
+                        <i class="fas fa-arrow-down"></i> Sell
+                    </button>
+                    <button class="button strategy-button" onclick="executeBundledTrades('move_liquidity', {})">
+                        <i class="fas fa-exchange-alt"></i> Move Liquidity
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            .bundler-card {
+                margin-top: 20px;
+            }
+
+            .bundle-actions {
+                margin-bottom: 24px;
+            }
+
+            .bundle-list {
+                margin-top: 24px;
+            }
+
+            .bundle-list h3 {
+                color: var(--text-color);
+                margin-bottom: 16px;
+            }
+
+            .bundle-strategy {
+                margin-top: 24px;
+            }
+
+            .bundle-strategy h3 {
+                color: var(--text-color);
+                margin-bottom: 16px;
+            }
+
+            .strategy-options {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 12px;
+            }
+
+            .strategy-button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 12px;
+                font-size: 14px;
+            }
+
+            .strategy-button i {
+                font-size: 16px;
+            }
+
+            .primary-button {
+                background: linear-gradient(45deg, var(--primary-color), #8034D9);
+                border: none;
+                padding: 12px 24px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .primary-button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(153, 69, 255, 0.3);
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    // Remove any existing notifications
+                    $('.copy-notification').remove();
+                    
+                    // Create and show new notification
+                    const notification = $('<div>')
+                        .addClass('copy-notification')
+                        .text('Copied to clipboard!')
+                        .appendTo('body');
+                    
+                    // Remove notification after 2 seconds
+                    setTimeout(() => {
+                        notification.fadeOut(300, function() {
+                            $(this).remove();
+                        });
+                    }, 2000);
+                }).catch(function(err) {
+                    console.error('Failed to copy text: ', err);
+                    // Show error notification
+                    const notification = $('<div>')
+                        .addClass('copy-notification')
+                        .css('background', 'linear-gradient(45deg, #ff4545, #ff7575)')
+                        .text('Failed to copy text')
+                        .appendTo('body');
+                    
+                    setTimeout(() => {
+                        notification.fadeOut(300, function() {
+                            $(this).remove();
+                        });
+                    }, 2000);
+                });
+            }
+
+            function updateStats(wallets) {
+                const totalWallets = wallets.length;
+                const totalBalance = wallets.reduce((sum, wallet) => sum + parseFloat(wallet.balance || 0), 0);
+                const avgBalance = totalWallets > 0 ? totalBalance / totalWallets : 0;
+
+                $('#total-wallets').text(totalWallets);
+                $('#total-balance').text(`${totalBalance.toFixed(4)} SOL`);
+                $('#avg-balance').text(`${avgBalance.toFixed(4)} SOL`);
+            }
+
+            function refreshWallets() {
+                $.get('/get_wallet_details', function(data) {
+                    if (data.wallets) {
+                        displayWallets(data.wallets);
+                    }
+                });
+            }
+
+            function displayWallets(wallets) {
+                // First, ensure the table is wrapped
+                if (!$('#wallets-table').parent().hasClass('wallet-table-wrapper')) {
+                    $('#wallets-table').wrap('<div class="wallet-table-wrapper"></div>');
+                }
+                
+                const tbody = $('#wallets-table tbody');
+                tbody.empty();
+                
+                wallets.forEach((wallet, index) => {
+                    const row = $('<tr>');
+                    row.append($('<td>').text(index + 1));
+                    row.append($('<td>').text(wallet.public_key)
+                        .append($('<button>')
+                            .addClass('copy-button')
+                            .html('<i class="fas fa-copy"></i>')
+                            .click((e) => {
+                                e.stopPropagation();
+                                copyToClipboard(wallet.public_key);
+                            })
+                        ));
+                    row.append($('<td>').addClass('balance').text(`${parseFloat(wallet.balance).toFixed(4)} SOL`));
+                    row.append($('<td>').html(`
+                        <div class="actions">
+                            <button class="copy-button" onclick="viewDetails('${wallet.public_key}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="copy-button" onclick="copyToClipboard('${wallet.secret_key}')">
+                                <i class="fas fa-key"></i>
+                            </button>
+                        </div>
+                    `));
+                    tbody.append(row);
+                });
+
+                updateStats(wallets);
+                $('#wallets-table').show();
+
+                getSuggestedStrategy();
+            }
+
+            $(document).ready(function() {
+                $('#generate-wallets-form').submit(function(event) {
+                    event.preventDefault();
+                    const generateResult = $('#generate-wallets-result');
+                    generateResult.html('<div class="loading"></div>');
+                    
+                    $.post('/generate_wallets', $(this).serialize(), function(data) {
+                        if (data.error) {
+                            generateResult.html(`
+                                <div class="funding-status error">
+                                    Error: ${data.error}
+                                </div>
+                            `);
+                        } else {
+                            generateResult.html(`
+                                <div class="funding-status success">
+                                    ${data.message}
+                                </div>
+                            `);
+                            refreshWallets();
+                        }
+                    });
+                });
+
+                $('#wallet-search').on('input', function() {
+                    const searchTerm = $(this).val().toLowerCase();
+                    $('#wallets-table tbody tr').each(function() {
+                        const publicKey = $(this).find('td:nth-child(2)').text().toLowerCase();
+                        $(this).toggle(publicKey.includes(searchTerm));
+                    });
+                });
+
+                refreshWallets();
+
+                $('#ai-question-form').submit(function(event) {
+                    event.preventDefault();
+                    showLoading('ai-response');
+                    
+                    $.post('/ask_gpt_about_wallets', $(this).serialize(), function(data) {
+                        if (data.response) {
+                            $('#ai-response').html(data.response.replace(/\n/g, '<br>'));
+                        } else {
+                            $('#ai-response').text('Error getting AI response');
+                        }
+                    });
+                });
+
+                $('#fund-wallets-form').submit(async function(event) {
+                    event.preventDefault();
+                    
+                    const amount = parseFloat($('#amount').val());
+                    const confirmed = await customAlert({
+                        title: 'Confirm Funding',
+                        message: `Are you sure you want to fund all wallets with ${amount} SOL each?`,
+                        showCancel: true,
+                        confirmText: 'Fund Wallets',
+                        cancelText: 'Cancel'
+                    });
+                    
+                    if (confirmed) {
+                        const fundingResult = $('#funding-result');
+                        fundingResult.html('<div class="loading"></div>');
+                        
+                        $.post('/fund_wallets', $(this).serialize(), function(data) {
+                            if (data.error) {
+                                if (data.insufficient_funds) {
+                                    // Show insufficient funds alert with detailed balance information
+                                    customAlert({
+                                        title: 'Insufficient Funds',
+                                        message: `${data.error}\n\nAvailable: ${data.available_balance} SOL\nRequired: ${data.required_balance} SOL`,
+                                        showCancel: false,
+                                        confirmText: 'OK'
+                                    });
+                                }
+                                fundingResult.html(`
+                                    <div class="funding-status error">
+                                        Error: ${data.error}
+                                    </div>
+                                `);
+                            } else {
+                                let successCount = data.results.filter(r => r.status === 'success').length;
+                                let progressPercent = (successCount / data.results.length) * 100;
+                                
+                                let resultHtml = `
+                                    <div class="funding-status success">
+                                        ${data.message}
+                                    </div>
+                                    <div class="funding-progress">
+                                        <div class="funding-progress-bar" style="width: ${progressPercent}%"></div>
+                                    </div>
+                                `;
+                                
+                                // Add individual wallet results
+                                data.results.forEach(result => {
+                                    resultHtml += `
+                                        <div class="funding-status ${result.status === 'success' ? 'success' : 'error'}">
+                                            ${result.wallet.substring(0, 8)}...${result.wallet.substring(-8)}: 
+                                            ${result.status === 'success' 
+                                                ? `Funded with ${result.amount} SOL` 
+                                                : `Failed - ${result.error}`}
+                                        </div>
+                                    `;
+                                });
+                                
+                                fundingResult.html(resultHtml);
+                                
+                                // Refresh wallet details to show new balances
+                                refreshWallets();
+                            }
+                        }).fail(function(jqXHR) {
+                            const response = jqXHR.responseJSON || {};
+                            if (response.insufficient_funds) {
+                                customAlert({
+                                    title: 'Insufficient Funds',
+                                    message: response.error,
+                                    showCancel: false,
+                                    confirmText: 'OK'
+                                });
+                            }
+                            fundingResult.html(`
+                                <div class="funding-status error">
+                                    Error: ${response.error || 'Failed to process request'}
+                                </div>
+                            `);
+                        });
+                    }
+                });
+
+                // Get admin wallet details on page load
+                getAdminWallet();
+
+                // Initialize navigation
+                $('.nav-button').click(function() {
+                    $('.nav-button').removeClass('active');
+                    $(this).addClass('active');
+                    
+                    const section = $(this).data('section');
+                    showSection(section);
+                    
+                    // Update URL without page reload
+                    history.pushState({}, '', `#${section}`);
+                });
+
+                // Initialize PumpFun stats
+                updatePumpFunStats();
+
+                // Refresh animation
+                $('.refresh-button').click(function() {
+                    $(this).addClass('rotating');
+                    setTimeout(() => {
+                        $(this).removeClass('rotating');
+                    }, 1000);
+                });
+
+                // Handle initial section based on URL hash
+                const initialSection = window.location.hash.substring(1) || 'dashboard';
+                $(`.nav-button[data-section="${initialSection}"]`).click();
+
+                // Load settings on page load
+                loadSettings();
+            });
+
+            function showLoading(elementId) {
+                $(`#${elementId}`).html('<div class="loading"></div>');
+            }
+
+            function getSuggestedStrategy() {
+                showLoading('strategy-response');
+                $.post('/suggest_bundle_strategy', function(data) {
+                    if (data.strategy) {
+                        $('#strategy-response').html(data.strategy.replace(/\n/g, '<br>'));
+                    } else {
+                        $('#strategy-response').text('Error getting strategy suggestion');
+                    }
+                });
+            }
+
+            function getAdminWallet() {
+                $.get('/get_admin_wallet', function(data) {
+                    if (data.error) {
+                        $('#admin-address').text('Error loading admin wallet');
+                        $('#admin-balance').text('');
+                    } else {
+                        const shortAddress = `${data.address.substring(0, 6)}...${data.address.substring(data.address.length - 4)}`;
+                        $('#admin-address').html(`
+                            ${shortAddress}
+                            <button class="copy-button small" onclick="copyToClipboard('${data.address}')">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        `);
+                        $('#admin-balance').text(`${parseFloat(data.balance).toFixed(4)} SOL`);
+                    }
+                });
+            }
+
+            function refreshAll() {
+                getAdminWallet();
+                refreshWallets();
+            }
+
+            function initCharts(stats) {
+                // Bundle Activity Chart
+                new Chart(document.getElementById('bundleActivityChart'), {
+                    type: 'line',
+                    data: {
+                        labels: stats.bundle_stats.labels,
+                        datasets: [{
+                            label: 'Bundle Activity',
+                            data: stats.bundle_stats.data,
+                            borderColor: '#9945FF',
+                            backgroundColor: 'rgba(153, 69, 255, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Daily Bundle Activity',
+                                color: '#FFFFFF'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#FFFFFF'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#FFFFFF'
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Performance Chart
+                new Chart(document.getElementById('performanceChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: stats.performance.labels,
+                        datasets: [{
+                            label: 'Returns (%)',
+                            data: stats.performance.returns,
+                            backgroundColor: '#14F195',
+                            borderRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Weekly Performance',
+                                color: '#FFFFFF'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#FFFFFF'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#FFFFFF'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function updatePumpFunStats() {
+                $.get('/get_pumpfun_stats', function(data) {
+                    if (!data.error) {
+                        $('#total-bundles').text(data.bundle_stats.total_bundles);
+                        $('#active-bundles').text(data.bundle_stats.active_bundles);
+                        $('#success-rate').text(data.bundle_stats.success_rate + '%');
+                        initCharts(data);
+                    }
+                });
+            }
+
+            function showSection(sectionName) {
+                // Hide all sections first
+                $('.stats, .card').hide();
+                
+                // Show sections based on selected nav
+                switch(sectionName) {
+                    case 'bundler':
+                        // Show only bundler-related cards
+                        $('.bundler-card').show();
+                        $('.card:contains("Bundle Strategy")').show();
+                        $('.card:contains("PumpFun Statistics")').show();
+                        
+                        // Refresh bundle data when showing the section
+                        refreshBundles();
+                        updatePumpFunStats();
+                        break;
+                        
+                    case 'dashboard':
+                        // Show only stats, AI Assistant, and charts
+                        $('.stats').show();
+                        $('.card:contains("AI Assistant")').show();
+                        $('.card:contains("PumpFun Statistics")').show();
+                        break;
+                        
+                    case 'wallets':
+                        // Show wallet management related cards
+                        $('.card:contains("Wallet Management")').show();
+                        $('.card:contains("Fund Wallets")').show();
+                        $('.card:contains("Wallet Overview")').show();
+                        break;
+                        
+                    case 'ai':
+                        // Show AI related cards
+        
+                        $('.card:contains("AI Assistant")').show();
+                        $('.card:contains("Bundle Strategy")').show();
+                        break;
+                        
+                    case 'settings':
+                        // Show only settings card
+                        $('.settings-card').show();
+                        break;
+                }
+            }
+
+            function loadSettings() {
+                const settings = JSON.parse(localStorage.getItem('solanaAISettings') || '{}');
+                
+                // Set default values if not present
+                const defaultSettings = {
+                    rpcEndpoint: 'https://api.mainnet-beta.solana.com',
+                    network: 'mainnet-beta',
+                    theme: 'dark',
+                    refreshInterval: 30
+                };
+
+                const finalSettings = { ...defaultSettings, ...settings };
+
+                // Apply settings to form
+                $('#rpc-endpoint').val(finalSettings.rpcEndpoint);
+                $('#network').val(finalSettings.network);
+                $('#theme').val(finalSettings.theme);
+                $('#refresh-interval').val(finalSettings.refreshInterval);
+
+                // Apply theme
+                applyTheme(finalSettings.theme);
+
+                // Setup auto-refresh
+                setupAutoRefresh(finalSettings.refreshInterval);
+            }
+
+            function saveSettings() {
+                const settings = {
+                    rpcEndpoint: $('#rpc-endpoint').val(),
+                    network: $('#network').val(),
+                    theme: $('#theme').val(),
+                    refreshInterval: parseInt($('#refresh-interval').val())
+                };
+
+                localStorage.setItem('solanaAISettings', JSON.stringify(settings));
+                
+                // Apply new settings
+                applyTheme(settings.theme);
+                setupAutoRefresh(settings.refreshInterval);
+
+                // Show success message
+                showToast('Settings saved successfully!');
+            }
+
+            function applyTheme(theme) {
+                const root = document.documentElement;
+                if (theme === 'light') {
+                    root.style.setProperty('--background-color', '#F5F5F5');
+                    root.style.setProperty('--card-background', '#FFFFFF');
+                    root.style.setProperty('--text-color', '#1C1C1C');
+                } else {
+                    root.style.setProperty('--background-color', '#1C1C1C');
+                    root.style.setProperty('--card-background', '#242424');
+                    root.style.setProperty('--text-color', '#FFFFFF');
+                }
+            }
+
+            let refreshInterval;
+            function setupAutoRefresh(seconds) {
+                // Clear existing interval
+                if (refreshInterval) {
+                    clearInterval(refreshInterval);
+                }
+
+                // Setup new interval
+                refreshInterval = setInterval(refreshAll, seconds * 1000);
+            }
+
+            function showToast(message) {
+                const toast = $('<div>')
+                    .addClass('toast')
+                    .text(message)
+                    .appendTo('body');
+                
+                setTimeout(() => {
+                    toast.remove();
+                }, 3000);
+            }
+
+            function customAlert(options) {
+                return new Promise((resolve) => {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'custom-alert-overlay';
+                    
+                    const alertBox = document.createElement('div');
+                    alertBox.className = 'custom-alert';
+                    
+                    const title = document.createElement('div');
+                    title.className = 'custom-alert-title';
+                    title.textContent = options.title || 'Confirm Action';
+                    
+                    const message = document.createElement('div');
+                    message.className = 'custom-alert-message';
+                    message.textContent = options.message;
+                    
+                    const buttons = document.createElement('div');
+                    buttons.className = 'custom-alert-buttons';
+                    
+                    if (options.showCancel) {
+                        const cancelButton = document.createElement('button');
+                        cancelButton.className = 'custom-alert-button cancel';
+                        cancelButton.textContent = options.cancelText || 'Cancel';
+                        cancelButton.onclick = () => {
+                            document.body.removeChild(overlay);
+                            resolve(false);
+                        };
+                        buttons.appendChild(cancelButton);
+                    }
+                    
+                    const confirmButton = document.createElement('button');
+                    confirmButton.className = 'custom-alert-button confirm';
+                    confirmButton.textContent = options.confirmText || 'Confirm';
+                    confirmButton.onclick = () => {
+                        document.body.removeChild(overlay);
+                        resolve(true);
+                    };
+                    buttons.appendChild(confirmButton);
+                    
+                    alertBox.appendChild(title);
+                    alertBox.appendChild(message);
+                    alertBox.appendChild(buttons);
+                    overlay.appendChild(alertBox);
+                    document.body.appendChild(overlay);
+                });
+            }
+
+            function createBundle() {
+                const button = $('.primary-button');
+                const originalContent = button.html();
+                button.html('<i class="fas fa-spinner fa-spin"></i> Creating...');
+                button.prop('disabled', true);
+
+                $.post('/create_bundle', function(data) {
+                    if (data.response) {
+                        showToast('Bundle created successfully!');
+                        // Refresh bundle list
+                        refreshBundles();
+                    } else {
+                        customAlert({
+                            title: 'Error',
+                            message: 'Failed to create bundle: ' + data.error,
+                            showCancel: false,
+                            confirmText: 'OK'
+                        });
+                    }
+                }).always(function() {
+                    button.html(originalContent);
+                    button.prop('disabled', false);
+                });
+            }
+
+            function launchBundle(bundleId) {
+                customAlert({
+                    title: 'Launch Bundle',
+                    message: `Are you sure you want to launch bundle ${bundleId}?`,
+                    showCancel: true,
+                    confirmText: 'Launch',
+                    cancelText: 'Cancel'
+                }).then(confirmed => {
+                    if (confirmed) {
+                        $.post('/launch_bundle', { bundle_id: bundleId }, function(data) {
+                            if (data.response) {
+                                showToast('Bundle launched successfully!');
+                                refreshBundles();
+                            } else {
+                                customAlert({
+                                    title: 'Error',
+                                    message: 'Failed to launch bundle: ' + data.error,
+                                    showCancel: false,
+                                    confirmText: 'OK'
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+
+            function executeBundledTrades(action, params) {
+                const actionNames = {
+                    'buy': 'Buy',
+                    'sell': 'Sell',
+                    'move_liquidity': 'Move Liquidity'
+                };
+
+                customAlert({
+                    title: 'Confirm Action',
+                    message: `Are you sure you want to execute ${actionNames[action]} action?`,
+                    showCancel: true,
+                    confirmText: 'Execute',
+                    cancelText: 'Cancel'
+                }).then(confirmed => {
+                    if (confirmed) {
+                        const button = $(`.strategy-button:contains('${actionNames[action]}')`);
+                        const originalContent = button.html();
+                        button.html(`<i class="fas fa-spinner fa-spin"></i> Executing...`);
+                        button.prop('disabled', true);
+
+                        $.post('/execute_bundled_trades', { 
+                            action: action, 
+                            params: params 
+                        }, function(data) {
+                            if (data.response) {
+                                showToast(`${actionNames[action]} executed successfully!`);
+                                refreshBundles();
+                            } else {
+                                customAlert({
+                                    title: 'Error',
+                                    message: `Failed to execute ${actionNames[action]}: ` + data.error,
+                                    showCancel: false,
+                                    confirmText: 'OK'
+                                });
+                            }
+                        }).always(function() {
+                            button.html(originalContent);
+                            button.prop('disabled', false);
+                        });
+                    }
+                });
+            }
+
+            function refreshBundles() {
+                // Show loading state
+                const tbody = $('#bundles-table tbody');
+                tbody.html('<tr><td colspan="4" style="text-align: center;"><div class="loading"></div></td></tr>');
+                
+                $.get('/get_bundles', function(data) {
+                    if (data.bundles) {
+                        displayBundles(data.bundles);
+                    } else {
+                        tbody.html('<tr><td colspan="4" style="text-align: center;">No active bundles</td></tr>');
+                    }
+                }).fail(function() {
+                    tbody.html('<tr><td colspan="4" style="text-align: center;">Failed to load bundles</td></tr>');
+                });
+            }
+
+            // Call refreshBundles when the bundler section is shown
+            $(document).ready(function() {
+                $('.nav-button[data-section="bundler"]').click(function() {
+                    refreshBundles();
+                });
+            });
+
+            function displayBundles(bundles) {
+                const tbody = $('#bundles-table tbody');
+                tbody.empty();
+                
+                if (!bundles || bundles.length === 0) {
+                    tbody.html('<tr><td colspan="4" style="text-align: center;">No active bundles</td></tr>');
+                    return;
+                }
+                
+                bundles.forEach(bundle => {
+                    const row = $('<tr>');
+                    row.append($('<td>').text(bundle.id));
+                    row.append($('<td>').text(`${bundle.wallets.length} wallets`));
+                    row.append($('<td>').html(getStatusBadge(bundle.status)));
+                    row.append($('<td>').html(`
+                        <div class="actions">
+                            <button class="copy-button" onclick="launchBundle('${bundle.id}')" ${bundle.status !== 'ready' ? 'disabled' : ''}>
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button class="copy-button" onclick="viewBundleDetails('${bundle.id}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    `));
+                    tbody.append(row);
+                });
+            }
+
+            function viewBundleDetails(bundleId) {
+                // Implement bundle details view
+                customAlert({
+                    title: 'Bundle Details',
+                    message: `Viewing details for bundle ${bundleId}`,
+                    showCancel: false,
+                    confirmText: 'Close'
+                });
+            }
+
+            // Add a helper function to generate status badges
+            function getStatusBadge(status) {
+                const statusColors = {
+                    'ready': 'var(--secondary-color)',
+                    'active': '#9945FF',
+                    'completed': '#14F195',
+                    'failed': '#ff4545'
+                };
+                
+                return `
+                    <span class="status-badge" style="
+                        background: ${statusColors[status] || '#666'};
+                        padding: 4px 8px;
+                        border-radius: 12px;
+                        font-size: 12px;
+                        font-weight: 500;
+                    ">
+                        ${status}
+                    </span>
+                `;
+            }
+        </script>
+    </div>
+</body>
+</html> 
